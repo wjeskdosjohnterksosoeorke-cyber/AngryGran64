@@ -1,0 +1,45 @@
+name: Build Angry Gran ARM64
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v4
+
+      - name: Extract project
+        run: |
+          unzip -o AngryGran64_ARM64_XcodeProject.zip -d project
+
+      - name: Find Xcode project
+        run: |
+          find project -name "*.xcodeproj" -print
+
+      - name: Build
+        run: |
+          PROJECT=$(find project -name "*.xcodeproj" -print -quit)
+          xcodebuild \
+            -project "$PROJECT" \
+            -sdk iphoneos \
+            -configuration Release \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package build
+        run: |
+          mkdir -p output
+          APP=$(find project -name "*.app" -type d -print -quit)
+          cp -R "$APP" output/AngryGran.app
+          zip -r output/AngryGran_ARM64_unsigned.zip output/AngryGran.app
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: AngryGran-ARM64-build
+          path: output/AngryGran_ARM64_unsigned.zip
